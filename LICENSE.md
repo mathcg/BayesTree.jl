@@ -1,5 +1,7 @@
 The BayesTree.jl package is licensed under the Simplified "2-clause" BSD License:
 
+> Copyright (c) 2014: Ben Hamner.
+>
 > Copyright (c) 2016: Gang Cheng.
 >
 > Redistribution and use in source and binary forms, with or without
