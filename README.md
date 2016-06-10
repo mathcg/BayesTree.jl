@@ -3,10 +3,9 @@ Code For Bayesian Additive Regression Trees
 
 API Introduction
 ================
-
    x = rand(100)
-   f = sin(pi*x);  
-   y = f+randn(100);
+   f = sin(pi*x)  
+   y = f+randn(100)
    bartoptions = bart_options()
    bart_1 = fit(x,y,bartoptions)
    test_data = randn(100);
