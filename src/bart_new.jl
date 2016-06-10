@@ -670,7 +670,7 @@ function StatsBase.predict(bart::Bart,x::Vector{Float64},confidence_interval::Bo
    StatsBase.predict(bart,x,confidence_interval)
 end
 
-function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval)
+function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval::Bool)
    x = x'
    y_predict = zeros(size(x,2),length(bart.bart_additive_trees))
    if confidence_interval
