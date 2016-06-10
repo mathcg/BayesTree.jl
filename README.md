@@ -12,7 +12,7 @@ API Introduction
    test_data = randn(100);
    test_data_true = sin(pi*test_data);
    test_data_predict = predict(bart_1,test_data)
-   println("The Mse is ",mean((test_data_true.-test_data_predict).^2))
+   println("The MSE is ",mean((test_data_true.-test_data_predict).^2))
 ```
    
 
