@@ -11,7 +11,7 @@ API Introduction
    #set up the parameters for bart
    bartoptions = bart_options()
    #fit the bart model
-   bart_1 = fit(x,y,bartoptions)
+   bart_1 = fit(x,y,bartoptions);
    #generate a test model and see the prediction performance
    test_data = rand(100);
    test_data_true = sin(pi*test_data);
