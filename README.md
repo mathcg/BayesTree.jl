@@ -3,6 +3,7 @@ Code For Bayesian Additive Regression Trees
 
 API Introduction
 ================
+```julia   
    x = rand(100)
    f = sin(pi*x)  
    y = f+randn(100)
@@ -12,5 +13,6 @@ API Introduction
    test_data_true = sin(pi*test_data);
    test_data_predict = predict(bart_1,test_data)
    println("The Mse is ",mean((test_data_true.-test_data_predict).^2))
+```
    
 
