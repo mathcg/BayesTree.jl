@@ -22,5 +22,3 @@ API Introduction
    println("The MSE is ",mean((test_data_true.-test_data_predict).^2))
 ```
    
-
->>>>>>> d730010b5c2c66e10e7a32930776dc96c56d7ffe
