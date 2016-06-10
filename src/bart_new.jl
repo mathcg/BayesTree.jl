@@ -665,22 +665,32 @@ function StatsBase.predict(bart_additive_tree::BartAdditiveTree,x::Matrix{Float6
   y_predict
 end
 
-function StatsBase.predict(bart::Bart,x::Vector{Float64})
+function StatsBase.predict(bart::Bart,x::Vector{Float64},confidence_interval::Bool)
    x = reshape(x,length(x),1)
-   StatsBase.predict(bart,x)
+   StatsBase.predict(bart,x,confidence_interval)
 end
 
-function StatsBase.predict(bart::Bart,x::Matrix{Float64})
+function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval)
    x = x'
    y_predict = zeros(size(x,2),length(bart.bart_additive_trees))
-   y_CI = zeros(size(x,2),2)
-   for i in range(1,length(bart.bart_additive_trees))
+   if confidence_interval
+      y_CI = zeros(size(x,2),2)
+      for i in range(1,length(bart.bart_additive_trees))
       y_predict[:,i] = predict(bart.bart_additive_trees[i],x)
       y_predict[:,i] = denormalize(y_predict[:,i],bart.y_min,bart.y_max)
       y_CI[i,:] = quantile(vec(y_predict[:,i]),[0.025,0.975])
+      end
+      #point estimate
+      y_hat = vec(mean(y_predict,2))
+      y_hat,y_CI
+   else
+      for i in range(1,length(bart.bart_additive_trees))
+        y_predict[:,i] = predict(bart.bart_additive_trees[i],x)
+        y_predict[:,i] = denormalize(y_predict[:,i],bart.y_min,bart.y_max)
+        y_CI[i,:] = quantile(vec(y_predict[:,i]),[0.025,0.975])
+      end
+      #point estimate
+      y_hat = vec(mean(y_predict,2))
+      y_hat
    end
-   #point estimate
-   y_hat = vec(mean(y_predict,2))
-   #interval estimate
-   y_hat,y_CI
 end
