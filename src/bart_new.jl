@@ -613,12 +613,12 @@ function StatsBase.fit(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOp
            if i % 100 ==0
             println("iteration: ",i," (of ",bartoptions.num_draws+bartoptions.num_burn_in,")")
            end
-           updates = 0
+           #updates = 0
            for  j = 1:bartoptions.num_trees
               y_tree_hat = predict(bart_state.trees[j],x)
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
-              updates+=updated?1:0
+              #updates+=updated?1:0
               y_hat += predict(bart_state.trees[j],x)-y_tree_hat
            end
            update_sigma!(bart_state,y_normalized-y_hat)
