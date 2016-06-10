@@ -584,39 +584,53 @@ function StatsBase.fit(x::Vector{Float64},y::Vector{Float64},bartoptions::BartOp
 end
 
 function StatsBase.fit(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOptions)
+  println("Running BART with numeric y\n")
+  println("Number of trees: ",bartoptions.num_trees)
+  println("Prior:")
+  println("     k: ",bartoptions.k)
   y_min = minimum(y)
   y_max = maximum(y)
   y_normalized = normalize(y,y_min,y_max)
-
+  number_observations = length(y);
+  number_predictors = size(x,2);
   x = x'
 
   bart_state = initialize_bart_state(x,y_normalized,bartoptions)
+  println("     degrees of freedom in sigma prior: ",bart_state.parameters.nu)
+  println("     quantile in sigma prior: 0.9")
+  println("     power and base for tree prior: ",bartoptions.alpha," ",bartoptions.beta)
+  println("     use quantile for rule cut points ",0)
+  println("data: ")
+  println("     number of training observations: ",number_observations)
+  println("     number of explanatory variables: ",number_predictors)
+
   bart_additive_trees = Array(BartAdditiveTree,0)
-
   y_hat = predict(bart_state,x)
-  #alphas = zeros(opts.num_trees)
+  println("\n")
+  println("Running mcmc loop:")
 
-  for i in range(1,bartoptions.num_draws+bartoptions.num_burn_in)
-      updates = 0
-      for  j = 1:bartoptions.num_trees
-            y_tree_hat = predict(bart_state.trees[j],x)
-            residual= y_normalized - (y_hat-y_tree_hat)
-            updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
-            updates+=updated?1:0
-            y_hat += predict(bart_state.trees[j],x)-y_tree_hat
-      end
-      update_sigma!(bart_state,y_normalized-y_hat)
-      println("there is",updates, "in this iteration")
-      if i>bartoptions.num_burn_in
-         if i % bartoptions.num_thinning==0
-            bart_additive_tree = bart_state_to_additivetree(bart_state)
-         #bart_additive_tree = BartAdditiveTree(bart_state.trees)
-            push!(bart_additive_trees,bart_additive_tree)
-         end
-      end
-      #num_leaves = [length(leaves(tree)) for tree=bart_state.trees]
-  end
-  Bart(bart_additive_trees,y_min,y_max,bartoptions)
+  @time for i in range(1,bartoptions.num_draws+bartoptions.num_burn_in)
+           if i % 100 ==0
+            println("iteration: ",i," (of ",bartoptions.num_draws+bartoptions.num_burn_in,")")
+           end
+           updates = 0
+           for  j = 1:bartoptions.num_trees
+              y_tree_hat = predict(bart_state.trees[j],x)
+              residual= y_normalized - (y_hat-y_tree_hat)
+              updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
+              updates+=updated?1:0
+              y_hat += predict(bart_state.trees[j],x)-y_tree_hat
+           end
+           update_sigma!(bart_state,y_normalized-y_hat)
+           #println("there is",updates, "in this iteration")
+           if i>bartoptions.num_burn_in
+              if i % bartoptions.num_thinning==0
+                bart_additive_tree = bart_state_to_additivetree(bart_state)
+                push!(bart_additive_trees,bart_additive_tree)
+              end
+           end
+        end
+   Bart(bart_additive_trees,y_min,y_max,bartoptions)
 end
 
 function StatsBase.predict(tree::BartTree,sample::Vector{Float64}) #import package StatsBase
