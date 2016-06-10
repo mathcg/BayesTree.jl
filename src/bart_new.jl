@@ -687,7 +687,6 @@ function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval)
       for i in range(1,length(bart.bart_additive_trees))
         y_predict[:,i] = predict(bart.bart_additive_trees[i],x)
         y_predict[:,i] = denormalize(y_predict[:,i],bart.y_min,bart.y_max)
-        y_CI[i,:] = quantile(vec(y_predict[:,i]),[0.025,0.975])
       end
       #point estimate
       y_hat = vec(mean(y_predict,2))
