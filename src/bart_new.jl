@@ -261,7 +261,7 @@ function node_prune!(bart_state::BartState,tree::BartTree,probability_prune::Flo
     if parent_not_grand_branch == nothing
        tree.tree.root = new_leaf
     elseif not_grand_branch==parent_not_grand_branch.left
-          parent_not_grand_branch.left = new_leafs
+          parent_not_grand_branch.left = new_leaf
     else
           parent_not_grand_branch.right = new_leaf
     end
