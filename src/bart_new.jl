@@ -508,6 +508,24 @@ function update_sigma!(bart_state::BartState,residuals::Vector{Float64})
   bart_state.parameters.sigma = sqrt(1/rand(x,1)[1])
 end
 
+#This two functions perform similar to predict,while significantly faster
+function predict_value(bart_tree::BartTree,x::Matrix{Float64})
+  leaf_nodes = leaves(bart_tree)
+  y_predict = zeros(size(x,2))
+  for leaf in leaf_nodes
+    y_predict[leaf.leaf_data_indices]=leaf.value
+  end
+  y_predict
+end
+
+function predict_value(bart_state::BartState,x::Matrix{Float64})
+   y_predict = zeros(size(x,2))
+   for tree in bart_state.trees
+      y_predict = y_predict.+predict_value(tree,x)
+   end
+   y_predict
+end
+
 function initialize_bart_state(x::Matrix{Float64},y_normalized::Vector{Float64},bartoptions::BartOptions)
   #number_observations = size(x,1)
   number_observations = size(x,2)
@@ -532,17 +550,19 @@ function initialize_bart_state(x::Matrix{Float64},y_normalized::Vector{Float64},
   for tree = bart_state.trees
       update_leaf_values!(tree,bart_state.parameters)
   end
-  yhat = predict(bart_state,x)
+  yhat = predict_value(bart_state,x)
 
   for (tree in bart_state.trees)
-      y_tree_hat = predict(tree,x)
+      y_tree_hat = predict_value(tree,x)
+
       residuals = y_normalized-(yhat-y_tree_hat)
       tree.tree.root.residual_mean = mean(residuals)
       tree.tree.root.residual_sigma = sqrt(mean((residuals.-mean(residuals)).^2))
       update_leaf_values!(tree,bart_state.parameters)
       #after we update one tree, we update estimate of y
-      yhat+=predict(tree,x)-y_tree_hat
-  end
+      y_tree_hat_new = predict_value(tree,x)
+      yhat+=y_tree_hat_new-y_tree_hat
+ end
   bart_state
 end
 
@@ -574,6 +594,7 @@ function denormalize(predict::Vector{Float64},y_min::Float64,y_max::Float64)
   y_denormalized
 end
 
+
 function StatsBase.fit(x::Vector{Float64},y::Vector{Float64},bartoptions::BartOptions)
     x = reshape(x,length(x),1)
     fit(x,y,bartoptions);
@@ -601,7 +622,8 @@ function StatsBase.fit(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOp
   println("     number of explanatory variables: ",number_predictors)
 
   bart_additive_trees = Array(BartAdditiveTree,0)
-  y_hat = predict(bart_state,x)
+  y_hat = predict_value(bart_state,x)
+
   println("\n")
   println("Running mcmc loop:")
 
@@ -611,17 +633,21 @@ function StatsBase.fit(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOp
            end
            updates = 0
            for  j = 1:bartoptions.num_trees
-              y_tree_hat = predict(bart_state.trees[j],x)
+              y_tree_hat = predict_value(bart_state.trees[j],x)
+
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
               updates+=updated?1:0
-              y_hat += predict(bart_state.trees[j],x)-y_tree_hat
+              y_tree_hat_new = predict_value(bart_state.trees[j],x)
+              y_hat+=y_tree_hat_new-y_tree_hat
+              #y_hat += predict(bart_state.trees[j],x)-y_tree_hat
            end
            update_sigma!(bart_state,y_normalized-y_hat)
            #println("there is",updates, "in this iteration")
            if i>bartoptions.num_burn_in
               if i % bartoptions.num_thinning==0
                 bart_additive_tree = bart_state_to_additivetree(bart_state)
+                #bart_additive_tree = BartAdditiveTree(bart_state.trees)
                 push!(bart_additive_trees,bart_additive_tree)
               end
            end
@@ -721,7 +747,7 @@ function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::Bart
   println("     number of explanatory variables: ",number_predictors)
 
   bart_additive_trees = Array(BartAdditiveTree,0)
-  y_hat = predict(bart_state,x)
+  y_hat = predict_value(bart_state,x)
   println("\n")
   count = zeros(number_predictors);
   println("Running mcmc loop:")
@@ -732,11 +758,11 @@ function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::Bart
            end
            updates = 0
            for  j = 1:bartoptions.num_trees
-              y_tree_hat = predict(bart_state.trees[j],x)
+              y_tree_hat = predict_value(bart_state.trees[j],x)
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
               updates+=updated?1:0
-              y_hat += predict(bart_state.trees[j],x)-y_tree_hat
+              y_hat += predict_value(bart_state.trees[j],x)-y_tree_hat
            end
            update_sigma!(bart_state,y_normalized-y_hat)
            #println("there is",updates, "in this iteration")
