@@ -4,7 +4,7 @@
 =======
 Code For Bayesian Additive Regression Trees
 
-Prediction Example
+Regression Example
 ================
 ```julia   
 #generate the data
