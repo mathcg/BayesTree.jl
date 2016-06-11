@@ -164,7 +164,7 @@ function node_grow!(bart_state::BartState,tree::BartTree,probability_grow::Float
     #feature = x[leaf_indices,split_feature]
     feature = vec(x[split_feature,leaf_indices])
     split_location = rand(1:length(feature))
-    split_value = feature[split_location]
+    split_value = sort(feature)[split_location]
 
     #It's possible that length(left_indices) =0 or length(right_indices)=0
     left_indices = leaf_indices[feature.<=split_value]
@@ -661,12 +661,12 @@ function StatsBase.predict(bart_additive_tree::BartAdditiveTree,x::Matrix{Float6
   y_predict
 end
 
-function StatsBase.predict(bart::Bart,x::Vector{Float64},confidence_interval::Bool)
+function StatsBase.predict(bart::Bart,x::Vector{Float64},confidence_interval=false::Bool)
    x = reshape(x,length(x),1)
    StatsBase.predict(bart,x,confidence_interval)
 end
 
-function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval::Bool)
+function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval=false::Bool)
    x = x'
    y_predict = zeros(size(x,2),length(bart.bart_additive_trees))
    if confidence_interval
@@ -691,4 +691,60 @@ function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval::Bo
       y_hat = vec(mean(y_predict,2))
       y_hat
    end
+end
+
+function model_selection(x::Matrix{Float64},y::Matrix{Float64},bartoptions::BartOptions)
+  println("Running BART with numeric y\n")
+  bartoptions.num_trees = 10;
+  println("Number of trees: ",bartoptions.num_trees)
+  println("Prior:")
+  println("     k: ",bartoptions.k)
+  y_min = minimum(y)
+  y_max = maximum(y)
+  y_normalized = normalize(y,y_min,y_max)
+  number_observations = length(y);
+  number_predictors = size(x,2);
+  x = x'
+
+  bart_state = initialize_bart_state(x,y_normalized,bartoptions)
+  println("     degrees of freedom in sigma prior: ",bart_state.parameters.nu)
+  println("     quantile in sigma prior: 0.9")
+  println("     power and base for tree prior: ",bartoptions.alpha," ",bartoptions.beta)
+  println("     use quantile for rule cut points ",0)
+  println("data: ")
+  println("     number of training observations: ",number_observations)
+  println("     number of explanatory variables: ",number_predictors)
+
+  bart_additive_trees = Array(BartAdditiveTree,0)
+  y_hat = predict(bart_state,x)
+  println("\n")
+  count = zeros(number_predictors);
+  println("Running mcmc loop:")
+
+  @time for i in range(1,bartoptions.num_draws+bartoptions.num_burn_in)
+           if i % 100 ==0
+            println("iteration: ",i," (of ",bartoptions.num_draws+bartoptions.num_burn_in,")")
+           end
+           updates = 0
+           for  j = 1:bartoptions.num_trees
+              y_tree_hat = predict(bart_state.trees[j],x)
+              residual= y_normalized - (y_hat-y_tree_hat)
+              updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
+              updates+=updated?1:0
+              y_hat += predict(bart_state.trees[j],x)-y_tree_hat
+           end
+           update_sigma!(bart_state,y_normalized-y_hat)
+           #println("there is",updates, "in this iteration")
+           if i>bartoptions.num_burn_in
+              if i % bartoptions.num_thinning==0 && i>1000
+                 for j in 1:bartoptions.num_trees
+                    branch_nodes = branches(bart_state.trees[j])
+                    for branch in branch_nodes
+                        count[branch.feature]+=1
+                    end
+                 end
+              end
+           end
+        end
+   count
 end
