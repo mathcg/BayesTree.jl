@@ -693,14 +693,14 @@ function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval=fal
    end
 end
 
-function model_selection(x::Vector{Float64},y::Vector{Float64},bartoptions::BartOptions)
+function model_selection(x::Vector{Float64},y::Vector{Float64},bartoptions::BartOptions,num_trees::Int)
    x = reshape(x,length(x),1)
-   model_selection(x,y,bartoptions);
+   model_selection(x,y,bartoptions,num_trees);
 end
 
-function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOptions)
+function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOptions,num_trees::Int)
   println("Running BART with numeric y\n")
-  bartoptions.num_trees = 5;
+  bartoptions.num_trees = num_trees;
   println("Number of trees: ",bartoptions.num_trees)
   println("Prior:")
   println("     k: ",bartoptions.k)
