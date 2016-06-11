@@ -63,11 +63,10 @@ type BartLeaf <: DecisionLeaf
   residual_sigma::Float64
   leaf_data_indices::Vector{Int} #all the training data contained in this leaf
 
-  function BartLeaf(value=0.0::Float64,residual::Vector{Float64},leaf_data_indices::Vector{Int})
+  function BartLeaf(value::Float64,residual::Vector{Float64},leaf_data_indices::Vector{Int})
         #here, we don't allow leaves with no training data
         residual_mean = mean(residual[leaf_data_indices])
         residual_sigma = sqrt(mean((residual[leaf_data_indices].-residual_mean).^2))
-
         new(value,residual_mean,residual_sigma,leaf_data_indices)
   end
 end
@@ -176,8 +175,8 @@ function node_grow!(bart_state::BartState,tree::BartTree,probability_grow::Float
     right_leaf_nonterminal = length(right_indices)>0?node_nonterminal(leaf_depth+1,bartoptions):0.0
 
     #construct the new branch and new leaf
-    left_leaf = BartLeaf(residual,left_indices)
-    right_leaf = BartLeaf(residual,right_indices)
+    left_leaf = BartLeaf(0.0,residual,left_indices)
+    right_leaf = BartLeaf(0.0,residual,right_indices)
     branch = DecisionBranch(split_feature,split_value,left_leaf,right_leaf)
     left_leaf_loglikelihood = node_loglikelihood(left_leaf,bart_state)
     right_leaf_loglikelihood = node_loglikelihood(right_leaf,bart_state)
@@ -249,7 +248,7 @@ function node_prune!(bart_state::BartState,tree::BartTree,probability_prune::Flo
   not_grand_branch_loglikelihood = node_loglikelihood(not_grand_branch,bart_state)
   #here, I construct a new leaf by combining the information in the left and right leaves of the not_grand_branch
   not_grand_branch_data_indices = vcat(not_grand_branch.left.leaf_data_indices,not_grand_branch.right.leaf_data_indices)
-  new_leaf = BartLeaf(residual,not_grand_branch_data_indices)
+  new_leaf = BartLeaf(0.0,residual,not_grand_branch_data_indices)
   proposal_new_leaf_loglikelihood= node_loglikelihood(new_leaf,bart_state)
 
   alpha = (1-not_grand_branch_nonterminal)*number_not_grand_branch_nodes*probability_grow
