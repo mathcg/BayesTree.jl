@@ -80,6 +80,7 @@ node_nonterminal(depth::Int,bartoptions::BartOptions) = node_nonterminal(depth,b
 function log_tree_prior(branch::DecisionBranch,depth::Int,bartoptions::BartOptions)
     prior = log(node_nonterminal(depth,bartoptions))
     #Here, we don't consider the probability of selecting available features
+    #since we always assume that all the variables are available
     #We only consider the probability of selecting available values
     #Here, it's possible that length(train_data_indices(branch))==0,then prior = Inf
     prior -= log(length(train_data_indices(branch)))

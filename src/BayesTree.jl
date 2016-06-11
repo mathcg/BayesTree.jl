@@ -39,7 +39,15 @@ module BayesTree
    log_tree_prior,
    node_loglikelihood,
    fit,
-   predict
+   predict,
+   node_grow!,
+   node_prune!,
+   node_grow_prune!,
+   change_decision_rule!,
+   swap_decision_rule!,
+   normalize,
+   denormalize,
+   initialize_bart_state
 
    include("tree.jl")
    include("decision_tree.jl")
