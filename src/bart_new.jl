@@ -296,14 +296,13 @@ end
 
 function tree_adjust!(parent::DecisionBranch,leaf::BartLeaf,x::Matrix{Float64},residual::Vector{Float64},branch_indices::Vector{Int},left::Bool)
    valid_split=true
-   if length(branch_indices)==0
-     valid_split = false
-     return valid_split
-   end
    if left
      parent.left = BartLeaf(leaf.value,residual,branch_indices)
    else
      parent.right = BartLeaf(leaf.value,residual,branch_indices)
+   end
+   if length(branch_indices)==0
+     valid_split = false
    end
    valid_split
 end
@@ -315,8 +314,9 @@ end
 function tree_adjust!(branch::DecisionBranch,x::Matrix{Float64},residual::Vector{Float64},branch_indices::Vector{Int64})
     valid_split = true
     if length(branch_indices)==0
-        valid_split = false
-        return valid_split
+       left_data_indices = branch_indices
+       right_data_indices = branch_indices
+       valid_split = false
     else
         #feature = x[branch_indices,branch.feature]
         feature = vec(x[branch.feature,branch_indices])
