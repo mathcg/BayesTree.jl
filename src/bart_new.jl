@@ -249,7 +249,7 @@ function node_prune!(bart_state::BartState,tree::BartTree,probability_prune::Flo
   not_grand_branch_loglikelihood = node_loglikelihood(not_grand_branch,bart_state)
   #here, I construct a new leaf by combining the information in the left and right leaves of the not_grand_branch
   not_grand_branch_data_indices = vcat(not_grand_branch.left.leaf_data_indices,not_grand_branch.right.leaf_data_indices)
-  new_leaf = BartLeaf((not_grand_branch.left.value+not_grand_branch_right.value)*0.5,residual,not_grand_branch_data_indices)
+  new_leaf = BartLeaf(residual,not_grand_branch_data_indices)
   proposal_new_leaf_loglikelihood= node_loglikelihood(new_leaf,bart_state)
 
   alpha = (1-not_grand_branch_nonterminal)*number_not_grand_branch_nodes*probability_grow
@@ -262,7 +262,7 @@ function node_prune!(bart_state::BartState,tree::BartTree,probability_prune::Flo
     if parent_not_grand_branch == nothing
        tree.tree.root = new_leaf
     elseif not_grand_branch==parent_not_grand_branch.left
-          parent_not_grand_branch.left = new_leaf
+          parent_not_grand_branch.left = new_leafs
     else
           parent_not_grand_branch.right = new_leaf
     end
