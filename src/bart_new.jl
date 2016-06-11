@@ -700,7 +700,7 @@ end
 
 function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOptions)
   println("Running BART with numeric y\n")
-  bartoptions.num_trees = 10;
+  bartoptions.num_trees = 5;
   println("Number of trees: ",bartoptions.num_trees)
   println("Prior:")
   println("     k: ",bartoptions.k)
