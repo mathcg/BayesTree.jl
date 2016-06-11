@@ -47,7 +47,8 @@ module BayesTree
    swap_decision_rule!,
    normalize,
    denormalize,
-   initialize_bart_state
+   initialize_bart_state,
+   model_selection
 
    include("tree.jl")
    include("decision_tree.jl")
