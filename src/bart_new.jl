@@ -63,16 +63,12 @@ type BartLeaf <: DecisionLeaf
   residual_sigma::Float64
   leaf_data_indices::Vector{Int} #all the training data contained in this leaf
 
-  function BartLeaf(residual::Vector{Float64},leaf_data_indices::Vector{Int})
-        #This allows that we have a empty leaf where there is no training data
-        #if length(leaf_data_indices)==0
-        #   residual_mean = 0.0
-        #   residual_sigma = 0.0
-        #else
+  function BartLeaf(value=0.0::Float64,residual::Vector{Float64},leaf_data_indices::Vector{Int})
+        #here, we don't allow leaves with no training data
         residual_mean = mean(residual[leaf_data_indices])
         residual_sigma = sqrt(mean((residual[leaf_data_indices].-residual_mean).^2))
-        #end
-        new(0.0,residual_mean,residual_sigma,leaf_data_indices)
+
+        new(value,residual_mean,residual_sigma,leaf_data_indices)
   end
 end
 
@@ -123,7 +119,9 @@ function update_tree!(bart_state::BartState,tree::BartTree,x::Matrix{Float64},re
     end
     #after we sample T_j, now we sample M_j given T_j
     #no matter we update updated or not, we update M_j(leaf_values)
-    update_leaf_values!(tree,bart_state.parameters)
+    if updated
+      update_leaf_values!(tree,bart_state.parameters)
+    end
     updated
 end
 
@@ -251,7 +249,7 @@ function node_prune!(bart_state::BartState,tree::BartTree,probability_prune::Flo
   not_grand_branch_loglikelihood = node_loglikelihood(not_grand_branch,bart_state)
   #here, I construct a new leaf by combining the information in the left and right leaves of the not_grand_branch
   not_grand_branch_data_indices = vcat(not_grand_branch.left.leaf_data_indices,not_grand_branch.right.leaf_data_indices)
-  new_leaf = BartLeaf(residual,not_grand_branch_data_indices)
+  new_leaf = BartLeaf((not_grand_branch.left.value+not_grand_branch_right.value)*0.5,residual,not_grand_branch_data_indices)
   proposal_new_leaf_loglikelihood= node_loglikelihood(new_leaf,bart_state)
 
   alpha = (1-not_grand_branch_nonterminal)*number_not_grand_branch_nodes*probability_grow
@@ -296,14 +294,12 @@ function train_data_indices(branch::DecisionBranch)
 end
 
 
-#tree_adjust!(parent::DecisionBranch,branch::DecisionBranch,x::Matrix{Float64},residual::Vector{Float64},branch_indices::Vector{Int},left::Bool) =tree_adjust!(branch,x,residual,branch_indices)
-
 function tree_adjust!(parent::DecisionBranch,leaf::BartLeaf,x::Matrix{Float64},residual::Vector{Float64},branch_indices::Vector{Int},left::Bool)
    valid_split=true
    if left
-     parent.left = BartLeaf(residual,branch_indices)
+     parent.left = BartLeaf(leaf.value,residual,branch_indices)
    else
-     parent.right = BartLeaf(residual,branch_indices)
+     parent.right = BartLeaf(leaf.value,residual,branch_indices)
    end
    if length(branch_indices)==0
      valid_split = false
@@ -522,7 +518,7 @@ function initialize_bart_state(x::Matrix{Float64},y_normalized::Vector{Float64},
   initial_residuals = y_normalized.-(bartoptions.num_trees-1)*mean(y_normalized)/bartoptions.num_trees
 
   for i in 1:bartoptions.num_trees
-     push!(trees,BartTree(DecisionTree(BartLeaf(initial_residuals,collect(1:number_observations)))))
+     push!(trees,BartTree(DecisionTree(BartLeaf(0.0,initial_residuals,collect(1:number_observations)))))
   end
 
   sigma = std(y_normalized);
@@ -679,6 +675,7 @@ function StatsBase.predict(bart::Bart,x::Matrix{Float64},confidence_interval::Bo
       y_predict[:,i] = predict(bart.bart_additive_trees[i],x)
       y_predict[:,i] = denormalize(y_predict[:,i],bart.y_min,bart.y_max)
       end
+
       for i in 1:size(x,2)
         y_CI[i,:] = quantile(vec(y_predict[i,:]),[0.025,0.975])
       end
