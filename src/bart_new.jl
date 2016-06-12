@@ -638,8 +638,10 @@ function StatsBase.fit(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOp
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
               updates+=updated?1:0
-              y_tree_hat_new = predict_value(bart_state.trees[j],x)
-              y_hat+=y_tree_hat_new-y_tree_hat
+              if updated
+                 y_tree_hat_new = predict_value(bart_state.trees[j],x)
+                 y_hat+=y_tree_hat_new-y_tree_hat
+              end
               #y_hat += predict(bart_state.trees[j],x)-y_tree_hat
            end
            update_sigma!(bart_state,y_normalized-y_hat)
@@ -762,7 +764,9 @@ function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::Bart
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
               updates+=updated?1:0
-              y_hat += predict_value(bart_state.trees[j],x)-y_tree_hat
+              if updated
+                 y_hat += predict_value(bart_state.trees[j],x)-y_tree_hat
+              end
            end
            update_sigma!(bart_state,y_normalized-y_hat)
            #println("there is",updates, "in this iteration")
