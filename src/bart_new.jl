@@ -118,10 +118,8 @@ function update_tree!(bart_state::BartState,tree::BartTree,x::Matrix{Float64},re
       updated = swap_decision_rule!(bart_state,tree,x,residual,bartoptions)
     end
     #after we sample T_j, now we sample M_j given T_j
-    #no matter we update updated or not, we update M_j(leaf_values)
-    if updated
-      update_leaf_values!(tree,bart_state.parameters)
-    end
+    #no matter we update updated or not, I think we should update M_j(leaf_values)
+    update_leaf_values!(tree,bart_state.parameters)
     updated
 end
 
@@ -638,10 +636,8 @@ function StatsBase.fit(x::Matrix{Float64},y::Vector{Float64},bartoptions::BartOp
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
               updates+=updated?1:0
-              if updated
-                 y_tree_hat_new = predict_value(bart_state.trees[j],x)
-                 y_hat+=y_tree_hat_new-y_tree_hat
-              end
+              y_tree_hat_new = predict_value(bart_state.trees[j],x)
+              y_hat+=y_tree_hat_new-y_tree_hat
               #y_hat += predict(bart_state.trees[j],x)-y_tree_hat
            end
            update_sigma!(bart_state,y_normalized-y_hat)
@@ -764,9 +760,7 @@ function model_selection(x::Matrix{Float64},y::Vector{Float64},bartoptions::Bart
               residual= y_normalized - (y_hat-y_tree_hat)
               updated = update_tree!(bart_state,bart_state.trees[j],x,residual,bartoptions)
               updates+=updated?1:0
-              if updated
-                 y_hat += predict_value(bart_state.trees[j],x)-y_tree_hat
-              end
+              y_hat += predict_value(bart_state.trees[j],x)-y_tree_hat
            end
            update_sigma!(bart_state,y_normalized-y_hat)
            #println("there is",updates, "in this iteration")
